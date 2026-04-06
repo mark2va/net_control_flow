@@ -9,10 +9,10 @@ namespace NetControlFlow.Utilities
 {
     public class StringDecryptor
     {
-        private readonly ModuleDef _module;
+        private readonly ModuleDefMD _module;
         private readonly Dictionary<string, string> _decryptCache;
 
-        public StringDecryptor(ModuleDef module)
+        public StringDecryptor(ModuleDefMD module)
         {
             _module = module;
             _decryptCache = new Dictionary<string, string>();

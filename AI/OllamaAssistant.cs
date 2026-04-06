@@ -32,7 +32,7 @@ namespace NetControlFlow.AI
                     { "Endpoint", _config.Endpoint },
                     { "Status", isHealthy ? "Healthy" : "Unhealthy" }
                 };
-                LogManager.LogOperation("Ollama Health Check", variables);
+                LogManager.LogInfo("Ollama Health Check", variables);
 
                 return isHealthy;
             }
@@ -57,7 +57,7 @@ namespace NetControlFlow.AI
                     { "CodeLength", code.Length },
                     { "ResponseLength", response.Length }
                 };
-                LogManager.LogOperation("Code Analysis", variables);
+                LogManager.LogInfo("Code Analysis", variables);
 
                 return response;
             }

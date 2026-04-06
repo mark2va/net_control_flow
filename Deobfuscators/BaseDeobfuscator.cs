@@ -1,29 +1,87 @@
 using dnlib.DotNet;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using NetControlFlow.Logging;
 using NetControlFlow.Models;
+using NetControlFlow.Config;
 
 namespace NetControlFlow.Deobfuscators
 {
+    public class DeobfuscationResultInternal
+    {
+        public int MethodsProcessed { get; set; }
+        public int IssuesFixed { get; set; }
+        public List<string> Warnings { get; set; } = new List<string>();
+        public List<string> Errors { get; set; } = new List<string>();
+    }
+
     public abstract class BaseDeobfuscator
     {
-        protected ModuleDef Module { get; set; }
-        protected string Name { get; set; }
+        public string Name { get; protected set; } = "Unknown";
+        public List<ObfuscatorType> SupportedObfuscators { get; protected set; } = new List<ObfuscatorType>();
 
-        public BaseDeobfuscator(ModuleDef module)
+        public virtual async Task<DeobfuscationResultInternal> DeobfuscateAsync(ModuleDefMD module, DeobfuscatorConfig config)
         {
-            Module = module;
+            var result = new DeobfuscationResultInternal();
+            
+            try
+            {
+                LogManager.LogInfo($"Starting {Name} deobfuscation...");
+                
+                // Run synchronous deobfuscation in task
+                await Task.Run(() =>
+                {
+                    Deobfuscate(module, config, result);
+                });
+                
+                LogManager.LogInfo($"{Name} deobfuscation completed. Methods: {result.MethodsProcessed}, Issues Fixed: {result.IssuesFixed}");
+            }
+            catch (Exception ex)
+            {
+                result.Errors.Add($"Deobfuscation error: {ex.Message}");
+                LogManager.LogError($"Error in {Name}", ex);
+            }
+            
+            return result;
         }
 
-        public abstract void Deobfuscate();
+        protected virtual void Deobfuscate(ModuleDefMD module, DeobfuscatorConfig config, DeobfuscationResultInternal result)
+        {
+            // Clean attributes
+            if (config.EnableMetadataCleanup)
+            {
+                CleanAttributes(module, result);
+            }
 
-        protected virtual void CleanAttributes()
+            // Clean namespaces
+            CleanNamespaces(module, result);
+
+            // String decryption
+            if (config.EnableStringDecryption)
+            {
+                DecryptStrings(module, config, result);
+            }
+
+            // Control flow unflattening
+            if (config.EnableControlFlowUnflattening)
+            {
+                UnflattenControlFlow(module, config, result);
+            }
+
+            // Resource extraction
+            if (config.EnableResourceExtraction)
+            {
+                ExtractResources(module, config, result);
+            }
+        }
+
+        protected virtual void CleanAttributes(ModuleDefMD module, DeobfuscationResultInternal result)
         {
             try
             {
                 var toRemove = new List<CustomAttribute>();
-                foreach (var attr in Module.Assembly.CustomAttributes)
+                foreach (var attr in module.Assembly.CustomAttributes)
                 {
                     if (attr.TypeFullName.Contains("SuppressIldasm") ||
                         attr.TypeFullName.Contains("ObfuscatedByAttribute") ||
@@ -34,41 +92,64 @@ namespace NetControlFlow.Deobfuscators
                 }
 
                 foreach (var attr in toRemove)
-                    Module.Assembly.CustomAttributes.Remove(attr);
+                    module.Assembly.CustomAttributes.Remove(attr);
 
                 if (toRemove.Count > 0)
-                    LogManager.LogOperation($"Removed {toRemove.Count} obfuscator attributes");
+                {
+                    result.IssuesFixed += toRemove.Count;
+                    LogManager.LogInfo($"Removed {toRemove.Count} obfuscator attributes");
+                }
             }
             catch (Exception ex)
             {
+                result.Warnings.Add($"Error cleaning attributes: {ex.Message}");
                 LogManager.LogError($"Error cleaning attributes in {Name}", ex);
             }
         }
 
-        protected virtual void CleanNamespaces()
+        protected virtual void CleanNamespaces(ModuleDefMD module, DeobfuscationResultInternal result)
         {
             try
             {
-                var suspiciousNamespaces = new List<TypeDef>();
-                foreach (var type in Module.Types)
+                int cleaned = 0;
+                foreach (var type in module.Types)
                 {
                     if (string.IsNullOrWhiteSpace(type.Namespace) ||
                         type.Namespace.Contains("\x00") ||
                         type.Namespace.Contains("＜") ||
-                        Char.IsControl(type.Namespace[0]))
+                        (type.Namespace.Length > 0 && Char.IsControl(type.Namespace[0])))
                     {
-                        suspiciousNamespaces.Add(type);
                         type.Namespace = "Deobfuscated";
+                        cleaned++;
                     }
                 }
 
-                if (suspiciousNamespaces.Count > 0)
-                    LogManager.LogOperation($"Cleaned {suspiciousNamespaces.Count} suspicious namespaces");
+                if (cleaned > 0)
+                {
+                    result.IssuesFixed += cleaned;
+                    LogManager.LogInfo($"Cleaned {cleaned} suspicious namespaces");
+                }
             }
             catch (Exception ex)
             {
+                result.Warnings.Add($"Error cleaning namespaces: {ex.Message}");
                 LogManager.LogError($"Error cleaning namespaces in {Name}", ex);
             }
+        }
+
+        protected virtual void DecryptStrings(ModuleDefMD module, DeobfuscatorConfig config, DeobfuscationResultInternal result)
+        {
+            // To be overridden by specific deobfuscators
+        }
+
+        protected virtual void UnflattenControlFlow(ModuleDefMD module, DeobfuscatorConfig config, DeobfuscationResultInternal result)
+        {
+            // To be overridden by specific deobfuscators
+        }
+
+        protected virtual void ExtractResources(ModuleDefMD module, DeobfuscatorConfig config, DeobfuscationResultInternal result)
+        {
+            // To be overridden by specific deobfuscators
         }
     }
 }

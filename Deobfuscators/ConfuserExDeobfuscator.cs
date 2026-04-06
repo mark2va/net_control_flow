@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 using NetControlFlow.Logging;
 using NetControlFlow.Utilities;
+using NetControlFlow.Models;
+using NetControlFlow.Config;
 
 namespace NetControlFlow.Deobfuscators
 {
@@ -14,51 +16,62 @@ namespace NetControlFlow.Deobfuscators
         private ResourceExtractor _resourceExtractor;
         private ControlFlowUnflattener _cfUnflattener;
 
-        public ConfuserExDeobfuscator(ModuleDef module) : base(module)
+        public ConfuserExDeobfuscator()
         {
             Name = "ConfuserEx";
-            _stringDecryptor = new StringDecryptor(module);
-            _resourceExtractor = new ResourceExtractor(module);
-            _cfUnflattener = new ControlFlowUnflattener(module);
+            SupportedObfuscators.Add(ObfuscatorType.ConfuserEx);
         }
 
-        public override void Deobfuscate()
+        protected override void Deobfuscate(ModuleDefMD module, DeobfuscatorConfig config, DeobfuscationResultInternal result)
         {
             try
             {
-                LogManager.LogOperation($"Starting {Name} deobfuscation");
+                LogManager.LogInfo($"Starting {Name} deobfuscation");
+                
+                _stringDecryptor = new StringDecryptor(module);
+                _resourceExtractor = new ResourceExtractor(module);
+                _cfUnflattener = new ControlFlowUnflattener(module);
 
-                // Stage 1: Clean metadata
-                CleanAttributes();
-                CleanNamespaces();
+                // Run base cleaning first
+                base.Deobfuscate(module, config, result);
 
                 // Stage 2: Decrypt strings
-                DecryptStrings();
+                if (config.EnableStringDecryption)
+                {
+                    DecryptStrings(module, result);
+                }
 
                 // Stage 3: Unflatten control flow
-                UnflattenControlFlow();
+                if (config.EnableControlFlowUnflattening)
+                {
+                    UnflattenControlFlow(module, result);
+                }
 
                 // Stage 4: Extract and decrypt resources
-                ExtractResources();
+                if (config.EnableResourceExtraction)
+                {
+                    ExtractResources(module, result);
+                }
 
                 // Stage 5: Remove anti-debug/anti-decompile
-                RemoveAntiDebugging();
+                RemoveAntiDebugging(module, result);
 
-                LogManager.LogSuccess($"{Name} deobfuscation completed");
+                LogManager.LogInfo($"{Name} deobfuscation completed");
             }
             catch (Exception ex)
             {
+                result.Errors.Add($"Error during {Name} deobfuscation: {ex.Message}");
                 LogManager.LogError($"Error during {Name} deobfuscation", ex);
                 throw;
             }
         }
 
-        private void DecryptStrings()
+        private void DecryptStrings(ModuleDefMD module, DeobfuscationResultInternal result)
         {
             try
             {
                 int decryptedCount = 0;
-                foreach (var type in Module.Types)
+                foreach (var type in module.Types)
                 {
                     foreach (var method in type.Methods)
                     {
@@ -90,20 +103,23 @@ namespace NetControlFlow.Deobfuscators
                     }
                 }
 
-                LogManager.LogOperation($"Decrypted {decryptedCount} strings in {Name}");
+                result.IssuesFixed += decryptedCount;
+                result.MethodsProcessed += decryptedCount > 0 ? 1 : 0;
+                LogManager.LogInfo($"Decrypted {decryptedCount} strings in {Name}");
             }
             catch (Exception ex)
             {
+                result.Warnings.Add($"Error decrypting strings: {ex.Message}");
                 LogManager.LogError($"Error decrypting strings in {Name}", ex);
             }
         }
 
-        private void UnflattenControlFlow()
+        private void UnflattenControlFlow(ModuleDefMD module, DeobfuscationResultInternal result)
         {
             try
             {
                 int unflattenedCount = 0;
-                foreach (var type in Module.Types)
+                foreach (var type in module.Types)
                 {
                     foreach (var method in type.Methods)
                     {
@@ -118,33 +134,38 @@ namespace NetControlFlow.Deobfuscators
                     }
                 }
 
-                LogManager.LogOperation($"Unflattened {unflattenedCount} methods in {Name}");
+                result.IssuesFixed += unflattenedCount;
+                result.MethodsProcessed += unflattenedCount;
+                LogManager.LogInfo($"Unflattened {unflattenedCount} methods in {Name}");
             }
             catch (Exception ex)
             {
+                result.Warnings.Add($"Error unflattening control flow: {ex.Message}");
                 LogManager.LogError($"Error unflattening control flow in {Name}", ex);
             }
         }
 
-        private void ExtractResources()
+        private void ExtractResources(ModuleDefMD module, DeobfuscationResultInternal result)
         {
             try
             {
                 var extractedCount = _resourceExtractor.ExtractAll();
-                LogManager.LogOperation($"Extracted {extractedCount} resources from {Name}");
+                result.IssuesFixed += extractedCount;
+                LogManager.LogInfo($"Extracted {extractedCount} resources from {Name}");
             }
             catch (Exception ex)
             {
+                result.Warnings.Add($"Error extracting resources: {ex.Message}");
                 LogManager.LogError($"Error extracting resources from {Name}", ex);
             }
         }
 
-        private void RemoveAntiDebugging()
+        private void RemoveAntiDebugging(ModuleDefMD module, DeobfuscationResultInternal result)
         {
             try
             {
                 int removedCount = 0;
-                foreach (var type in Module.Types)
+                foreach (var type in module.Types)
                 {
                     foreach (var method in type.Methods)
                     {
@@ -181,10 +202,12 @@ namespace NetControlFlow.Deobfuscators
                     }
                 }
 
-                LogManager.LogOperation($"Removed {removedCount} anti-debug instructions");
+                result.IssuesFixed += removedCount;
+                LogManager.LogInfo($"Removed {removedCount} anti-debug instructions");
             }
             catch (Exception ex)
             {
+                result.Warnings.Add($"Error removing anti-debug code: {ex.Message}");
                 LogManager.LogError($"Error removing anti-debug code", ex);
             }
         }

@@ -10,10 +10,10 @@ namespace NetControlFlow.Utilities
 {
     public class ResourceExtractor
     {
-        private readonly ModuleDef _module;
+        private readonly ModuleDefMD _module;
         private readonly string _outputDir;
 
-        public ResourceExtractor(ModuleDef module, string outputDir = "./extracted_resources")
+        public ResourceExtractor(ModuleDefMD module, string outputDir = "./extracted_resources")
         {
             _module = module;
             _outputDir = outputDir;
@@ -34,7 +34,7 @@ namespace NetControlFlow.Utilities
                 // Extract embedded assemblies
                 extractedCount += ExtractEmbeddedAssemblies();
 
-                LogManager.LogOperation($"Extracted {extractedCount} resources total");
+                LogManager.LogInfo($"Extracted {extractedCount} resources total");
             }
             catch (Exception ex)
             {
