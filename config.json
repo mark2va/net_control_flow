@@ -1,0 +1,40 @@
+{
+  "input_path": "./input",
+  "output_path": "./output",
+  "recursive": true,
+  "detect_only": false,
+  "clean_strings_only": false,
+  "preserve_original": true,
+  "logging": {
+    "enabled": true,
+    "log_path": "./logs",
+    "log_level": "Information",
+    "include_variables": true,
+    "log_format": "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] {Message:lj}{NewLine}{Exception}"
+  },
+  "ollama": {
+    "enabled": false,
+    "endpoint": "http://localhost:11434",
+    "model": "llama2",
+    "timeout_seconds": 30,
+    "use_for_naming": false,
+    "use_for_analysis": false
+  },
+  "deobfuscation": {
+    "unflat_control_flow": true,
+    "restore_names": true,
+    "remove_anti_decompile": true,
+    "devirtualize_methods": false,
+    "decrypt_resources": true,
+    "clean_metadata": true,
+    "remove_bad_attributes": true,
+    "fix_method_signatures": true,
+    "supported_obfuscators": [
+      "ConfuserEx",
+      "SmartAssembly",
+      "Dotfuscator",
+      "Eazfuscator",
+      "ILProtector"
+    ]
+  }
+}
