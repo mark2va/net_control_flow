@@ -146,21 +146,21 @@ namespace NetControlFlow.Analysis
             if (IsLikelyFlattenedSwitch(cfg))
             {
                 cfg.Patterns.Add(ControlFlowPattern.FlattenedSwitch);
-                LogManager.LogOperation($"Detected FlattenedSwitch pattern in {method.Name}");
+                LogManager.LogInfo($"Detected FlattenedSwitch pattern in {method.Name}");
             }
 
             // Detect opaque predicates
             if (HasOpaquePredicates(cfg))
             {
                 cfg.Patterns.Add(ControlFlowPattern.OpaquePredicates);
-                LogManager.LogOperation($"Detected OpaquePredicates pattern in {method.Name}");
+                LogManager.LogInfo($"Detected OpaquePredicates pattern in {method.Name}");
             }
 
             // Detect dead code
             if (HasDeadCode(cfg))
             {
                 cfg.Patterns.Add(ControlFlowPattern.DeadCode);
-                LogManager.LogOperation($"Detected DeadCode pattern in {method.Name}");
+                LogManager.LogInfo($"Detected DeadCode pattern in {method.Name}");
             }
         }
 

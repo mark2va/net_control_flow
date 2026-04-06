@@ -8,9 +8,9 @@ namespace NetControlFlow.Utilities
 {
     public class MetadataCleanup
     {
-        private readonly ModuleDef _module;
+        private readonly ModuleDefMD _module;
 
-        public MetadataCleanup(ModuleDef module)
+        public MetadataCleanup(ModuleDefMD module)
         {
             _module = module;
         }
@@ -24,7 +24,7 @@ namespace NetControlFlow.Utilities
                 FixTypeNames();
                 FixMethodNames();
                 RemoveEmptyNamespaces();
-                LogManager.LogSuccess("Metadata cleanup completed");
+                LogManager.LogInfo("Metadata cleanup completed");
             }
             catch (Exception ex)
             {
@@ -53,7 +53,7 @@ namespace NetControlFlow.Utilities
                     _module.Assembly.CustomAttributes.Remove(attr);
 
                 if (toRemove.Count > 0)
-                    LogManager.LogOperation($"Removed {toRemove.Count} obfuscator attributes");
+                    LogManager.LogInfo($"Removed {toRemove.Count} obfuscator attributes");
             }
             catch (Exception ex)
             {
@@ -106,7 +106,7 @@ namespace NetControlFlow.Utilities
                 }
 
                 if (removedCount > 0)
-                    LogManager.LogOperation($"Removed {removedCount} suspicious attributes");
+                    LogManager.LogInfo($"Removed {removedCount} suspicious attributes");
             }
             catch (Exception ex)
             {
@@ -130,7 +130,7 @@ namespace NetControlFlow.Utilities
                 }
 
                 if (fixedCount > 0)
-                    LogManager.LogOperation($"Fixed {fixedCount} suspicious type names");
+                    LogManager.LogInfo($"Fixed {fixedCount} suspicious type names");
             }
             catch (Exception ex)
             {
@@ -157,7 +157,7 @@ namespace NetControlFlow.Utilities
                 }
 
                 if (fixedCount > 0)
-                    LogManager.LogOperation($"Fixed {fixedCount} suspicious method names");
+                    LogManager.LogInfo($"Fixed {fixedCount} suspicious method names");
             }
             catch (Exception ex)
             {
@@ -182,7 +182,7 @@ namespace NetControlFlow.Utilities
                 }
 
                 if (cleanedCount > 0)
-                    LogManager.LogOperation($"Cleaned {cleanedCount} empty/suspicious namespaces");
+                    LogManager.LogInfo($"Cleaned {cleanedCount} empty/suspicious namespaces");
             }
             catch (Exception ex)
             {
